@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forum</title>
+    <!-- Add Bootstrap CSS link -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+
+    <style>
+      /* Custom CSS styles for the forum */
+      .comment {
+        position: relative;
+        display: flex; /* Use flexbox to create a flexible layout */
+        justify-content: space-between; /* Push the delete button to the right */
+        align-items: center; /* Vertically center the delete button */
+        border: 1px solid #e2e2e2;
+        margin-bottom: 20px;
+        padding: 10px; /* Add padding to the comment container for better spacing */
+      }
+
+      .delete-comment {
+        margin-left: 20px;
+        position: absolute;
+        padding: 5px 10px; /* Add padding for button size */
+        background-color: #ff0000; /* Add background color for button */
+        color: #fff; /* Set text color for button */
+        border: none; /* Remove button border */
+        cursor: pointer; /* Add cursor pointer for better interaction */
+      }
+      .forum-post {
+        background-color: #fff;
+        border: 1px solid #e2e2e2;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+      }
+
+      .forum-post:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .forum-post h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .forum-post p {
+        font-size: 18px;
+        margin: 5px 0;
+        color: #555;
+      }
+
+      .forum-post a {
+        text-decoration: none;
+        color: #007bff;
+        font-weight: bold;
+      }
+
+      .forum-post a:hover {
+        text-decoration: underline;
+      }
+
+      .comment-list {
+        list-style: none;
+      }
+
+      .comment-list li {
+        background-color: #f1efef;
+        border: 1px solid #e2e2e2;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+      }
+
+      .comment-list li:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .post-dlt {
+        display: flex;
+        justify-content: space-between; /* This pushes the items to the left and right edges */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <div class="text-center mb-4">
+        <img src="banner.png" alt="Logo" class="img-fluid" />
+        <br />
+      </div>
+      <div id="forum-posts">
+        <!-- Forum posts will be displayed here dynamically -->
+      </div>
+    </div>
+
+    <!-- Add Bootstrap and Firebase JavaScript libraries here -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Add Firebase JavaScript libraries here -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script>
+      const db = firebase.firestore();
+      const forumPostsContainer = document.getElementById("forum-posts");
+
+      function displayForumPosts() {
+        // Fetch data from Firestore collection ("Suggestions")
+        db.collection("Suggestions")
+          .get()
+          .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+              // Get data from the document
+              const { name, email, CINECID, message } = doc.data();
+
+              // Create a unique suggestionId based on Firestore document ID
+              const suggestionId = doc.id;
+
+              // Create HTML elements to display the post
+              const postElement = document.createElement("div");
+              postElement.classList.add("forum-post");
+              postElement.setAttribute("data-suggestion", suggestionId); // Add suggestionId as a data attribute
+              postElement.innerHTML = `
+          <p>Name: ${name}</p>
+          <p>Email: ${email}</p>
+          <p>CINEC ID: ${CINECID}</p>
+          <hr><div class="post-dlt">
+            <h4 class="msg">${message}</h4>
+
+            <!-- Delete button for the post -->
+            <button class="btn btn-danger delete-post">Delete Post</button>
+          </div>
+          
+          <!-- Comments section -->
+          <div class="comments">
+            <hr>
+            <h5>Comments:</h5>
+            <ul class="comment-list commentss">
+              <!-- Comments will be displayed here dynamically -->
+            </ul>
+            
+            <!-- Add a comment form -->
+            <form class="comment-form">
+              <div class="form-group">
+                <input type="text" class="form-control" placeholder="Your comment" />
+              </div><br>
+              <button type="submit" class="btn btn-primary">Add Comment</button>
+            </form>
+          </div>
+        `;
+
+              // Append the post to the forum container
+              forumPostsContainer.appendChild(postElement);
+
+              // Fetch and display comments for this suggestion
+              displayComments(suggestionId);
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching forum posts: ", error);
+          });
+      }
+
+      function displayComments(suggestionId) {
+        const commentList = forumPostsContainer.querySelector(
+          `[data-suggestion="${suggestionId}"] .comment-list`
+        );
+
+        // Clear existing comments
+        commentList.innerHTML = "";
+
+        // Fetch comments from Firestore collection ("Comments") for the given suggestionId
+        db.collection("Comments")
+          .where("suggestionId", "==", suggestionId)
+          .get()
+          .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+              const commentData = doc.data();
+              const commentElement = document.createElement("li");
+
+              // Create a delete button for each comment
+              const deleteButton = document.createElement("button");
+              deleteButton.classList.add("btn", "btn-danger", "delete-comment");
+
+              // Create an <i> element for the trash can icon
+              // Create a <span> element for the trash can icon
+              const trashIcon = document.createElement("span");
+              trashIcon.innerHTML = "&#128465;"; // Unicode HTML entity for a trash can icon
+
+              // Append the icon to the button
+              deleteButton.appendChild(trashIcon);
+
+              // Set the button text (optional)
+              deleteButton.textContent = "X";
+
+              // Attach an event listener to the delete button
+              deleteButton.addEventListener("click", () => {
+                // Call a function to delete the comment
+                deleteComment(doc.id);
+              });
+
+              commentElement.textContent = commentData.text;
+
+              // Append the delete button to the comment element
+              commentElement.appendChild(deleteButton);
+
+              commentList.appendChild(commentElement);
+            });
+          })
+          .catch((error) => {
+            console.error(
+              `Error fetching comments for suggestion ${suggestionId}: `,
+              error
+            );
+          });
+      }
+
+      // Add event listener to handle post deletion
+      forumPostsContainer.addEventListener("click", (e) => {
+        if (e.target.classList.contains("delete-post")) {
+          // Find the parent post element
+          const postElement = e.target.closest(".forum-post");
+
+          // Find the suggestion ID stored as a data attribute
+          const suggestionId = postElement.getAttribute("data-suggestion");
+
+          // Call a function to delete the post and its associated comments
+          deletePost(suggestionId);
+        }
+      });
+
+      // Function to delete a post and its associated comments
+      // Function to delete a post and its associated comments
+      function deletePost(suggestionId) {
+        // Delete the post document from Firestore
+        db.collection("Suggestions")
+          .doc(suggestionId)
+          .delete()
+          .then(() => {
+            // Handle successful deletion (e.g., remove the post element from the DOM)
+            const postElement = forumPostsContainer.querySelector(
+              `[data-suggestion="${suggestionId}"]`
+            );
+            if (postElement) {
+              postElement.remove();
+            }
+            console.log("Post deleted successfully");
+          })
+          .catch((error) => {
+            console.error("Error deleting post: ", error);
+          });
+
+        // Delete associated comments for the post
+        db.collection("Comments")
+          .where("suggestionId", "==", suggestionId)
+          .get()
+          .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+              // Delete each comment associated with the post
+              db.collection("Comments")
+                .doc(doc.id)
+                .delete()
+                .catch((error) => {
+                  console.error("Error deleting comment: ", error);
+                });
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching comments for deletion: ", error);
+          });
+      }
+
+      // Function to delete a comment
+      function deleteComment(commentId) {
+        db.collection("Comments")
+          .doc(commentId)
+          .delete()
+          .then(() => {
+            // Handle successful deletion (e.g., remove the comment element from the DOM)
+            const commentElement = forumPostsContainer.querySelector(
+              `[data-comment-id="${commentId}"]`
+            );
+            if (commentElement) {
+              commentElement.remove();
+            }
+            console.log("Comment deleted successfully");
+          })
+          .catch((error) => {
+            console.error("Error deleting comment: ", error);
+          });
+      }
+
+      // Event delegation to handle comment deletion
+      forumPostsContainer.addEventListener("click", (e) => {
+        if (e.target.classList.contains("delete-comment")) {
+          // Find the parent comment element
+          const commentElement = e.target.parentElement;
+
+          // Find the comment ID stored as a data attribute
+          const commentId = commentElement.getAttribute("data-comment-id");
+
+          // Call the deleteComment function
+          deleteComment(commentId);
+        }
+      });
+
+      // Add event listener to handle comment submission
+
+      forumPostsContainer.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const commentForm = e.target;
+        const input = commentForm.querySelector("input");
+        const suggestionId = commentForm
+          .closest(".forum-post")
+          .getAttribute("data-suggestion");
+
+        // Add the comment to Firestore
+        db.collection("Comments")
+          .add({
+            suggestionId: suggestionId,
+            text: input.value,
+          })
+          .then(() => {
+            // Clear the input field after adding the comment
+            input.value = "";
+
+            // Refresh the comments section to display the new comment
+            displayComments(suggestionId);
+          })
+          .catch((error) => {
+            console.error("Error adding comment: ", error);
+          });
+      });
+
+      // Call the function to display forum posts when the page loads
+      window.addEventListener("load", displayForumPosts);
+    </script>
+  </body>
+</html>
