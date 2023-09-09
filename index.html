@@ -11,7 +11,15 @@
     />
 
     <style>
-      /* Custom CSS styles for the forum */
+      .post-top-line {
+        position: absolute;
+        top: 0; /* Position the line at the top edge of the post container */
+        left: 0;
+        width: 100%; /* Span the entire width of the post container */
+        height: 8px; /* Adjust the thickness of the line as needed */
+        background-color: #007bff; /* Set the desired color for the line */ /* Adjust spacing between the line and post content */
+      }
+
       .comment {
         position: relative;
         display: flex; /* Use flexbox to create a flexible layout */
@@ -26,8 +34,8 @@
         margin-left: 20px;
         position: absolute;
         padding: 5px 10px; /* Add padding for button size */
-        background-color: #ff0000; /* Add background color for button */
-        color: #fff; /* Set text color for button */
+        background-color: transparent; /* Add background color for button */
+        color: #ff0000; /* Set text color for button */
         border: none; /* Remove button border */
         cursor: pointer; /* Add cursor pointer for better interaction */
       }
@@ -36,6 +44,7 @@
         color: #0a0961;
       }
       .forum-post {
+        position: relative;
         background-color: #fff;
         border: 1px solid #e2e2e2;
         border-radius: 10px;
@@ -43,6 +52,7 @@
         padding: 20px;
         margin-bottom: 20px;
         transition: transform 0.2s;
+        overflow: hidden;
       }
 
       .forum-post:hover {
@@ -86,14 +96,17 @@
         transition: transform 0.2s;
       }
 
-      .comment-list li:hover {
+      /* .comment-list li:hover {
         transform: translateY(-5px);
         box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-      }
+      } */
 
       .post-dlt {
+        padding: 10px;
+        border-radius: 10px;
         display: flex;
         justify-content: space-between; /* This pushes the items to the left and right edges */
+        background-color: #b1caf765;
       }
     </style>
   </head>
@@ -137,32 +150,35 @@
               postElement.classList.add("forum-post");
               postElement.setAttribute("data-suggestion", suggestionId); // Add suggestionId as a data attribute
               postElement.innerHTML = `
-          <p>Name: ${name}</p>
-          <p>Email: ${email}</p>
-          <p>CINEC ID: ${CINECID}</p>
-          <hr><div class="post-dlt">
-            <h4 class="msg">${message}</h4>
+              <!-- Colored line at the top -->
+               <div class="post-top-line"></div>
 
-            <!-- Delete button for the post -->
-            <button class="btn btn-danger delete-post">Delete Post</button>
-          </div>
+                <p>Name: ${name}</p>
+                <p>Email: ${email}</p>
+                <p>CINEC ID: ${CINECID}</p>
+                <hr><div class="post-dlt">
+                  <h4 class="msg">${message}</h4>
+
+                  <!-- Delete button for the post -->
+                  <button class="btn btn-danger delete-post">Delete Post</button>
+                </div>
           
-          <!-- Comments section -->
-          <div class="comments">
-            <hr>
-            <h5>Comments:</h5>
-            <ul class="comment-list commentss">
-              <!-- Comments will be displayed here dynamically -->
-            </ul>
-            
-            <!-- Add a comment form -->
-            <form class="comment-form">
-              <div class="form-group">
-                <input type="text" class="form-control" placeholder="Your comment" />
-              </div><br>
-              <button type="submit" class="btn btn-primary">Add Comment</button>
-            </form>
-          </div>
+                <!-- Comments section -->
+                <div class="comments">
+                  <hr>
+                  <h5>Comments:</h5>
+                  <ul class="comment-list commentss">
+                    <!-- Comments will be displayed here dynamically -->
+                  </ul>
+                  
+                  <!-- Add a comment form -->
+                  <form class="comment-form">
+                    <div class="form-group">
+                      <input type="text" class="form-control" placeholder="Your comment" />
+                    </div><br>
+                    <button type="submit" class="btn btn-primary">Add Comment</button>
+                  </form>
+                </div>
         `;
 
               // Append the post to the forum container
